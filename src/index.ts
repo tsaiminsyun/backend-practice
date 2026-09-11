@@ -15,6 +15,24 @@ type Todo = {
 const todos: Todo[] = [];
 let nextId = 1;
 
+function parseTodoId(value: string): number | null {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
+}
+
+function isValidTitle(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isValidCompleted(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
@@ -32,16 +50,16 @@ app.get("/todos", (req, res) => {
 app.post("/todos", (req, res) => {
   const { title } = req.body;
 
-  if (!title) {
+  if (!isValidTitle(title)) {
     res.status(400).json({
-      message: "title is required",
+      message: "title must be a non-empty string",
     });
     return;
   }
 
   const todo: Todo = {
     id: nextId,
-    title,
+    title: title.trim(),
     completed: false,
   };
 
@@ -54,12 +72,12 @@ app.post("/todos", (req, res) => {
 });
 
 app.get("/todos/:id", (req, res) => {
-  const id = Number(req.params.id);
+  const id = parseTodoId(req.params.id);
   const todo = todos.find((todo) => todo.id === id);
 
-  if (!todo) {
+  if (id === null) {
     res.status(404).json({
-      message: "todo not found",
+      message: "Id must be a postive integer",
     });
     return;
   }
@@ -70,8 +88,38 @@ app.get("/todos/:id", (req, res) => {
 });
 
 app.patch("/todos/:id", (req, res) => {
-  const id = Number(req.params.id);
+  const id = parseTodoId(req.params.id);
+
+  if (id === null) {
+    res.status(404).json({
+      message: "Id must be a postive integer",
+    });
+    return;
+  }
+
   const { title, completed } = req.body;
+
+  if (title === undefined && completed === undefined) {
+    res.status(404).json({
+      message: "title or completed is required",
+    });
+    return;
+  }
+
+  if (title !== undefined && isValidTitle(title)) {
+    res.status(404).json({
+      message: "title must be a non-empty string",
+    });
+    return;
+  }
+
+  if (completed !== undefined && !isValidCompleted(completed)) {
+    res.status(404).json({
+      message: "completed must be a boolean",
+    });
+    return;
+  }
+
   const todo = todos.find((todo) => todo.id === id);
 
   if (!todo) {
@@ -82,7 +130,7 @@ app.patch("/todos/:id", (req, res) => {
   }
 
   if (title !== undefined) {
-    todo.title = title;
+    todo.title = title.trim();
   }
 
   if (completed !== undefined) {
@@ -95,7 +143,15 @@ app.patch("/todos/:id", (req, res) => {
 });
 
 app.delete("/todos/:id", (req, res) => {
-  const id = Number(req.params.id);
+  const id = parseTodoId(req.params.id);
+
+  if (id === null) {
+    res.status(404).json({
+      message: "Id must be a postive integer",
+    });
+    return;
+  }
+
   const todoIndex = todos.findIndex((todo) => todo.id === id);
 
   if (todoIndex === -1) {
