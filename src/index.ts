@@ -53,6 +53,62 @@ app.post("/todos", (req, res) => {
   });
 });
 
+app.get("/todos/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const todo = todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    res.status(404).json({
+      message: "todo not found",
+    });
+    return;
+  }
+
+  res.json({
+    data: todo,
+  });
+});
+
+app.patch("/todos/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const { title, completed } = req.body;
+  const todo = todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    res.status(404).json({
+      message: "todo not found",
+    });
+    return;
+  }
+
+  if (title !== undefined) {
+    todo.title = title;
+  }
+
+  if (completed !== undefined) {
+    todo.completed = completed;
+  }
+
+  res.json({
+    data: todo,
+  });
+});
+
+app.delete("/todos/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const todoIndex = todos.findIndex((todo) => todo.id === id);
+
+  if (todoIndex === -1) {
+    res.status(404).json({
+      message: "todo not found",
+    });
+    return;
+  }
+
+  todos.splice(todoIndex, 1);
+  res.status(204).send();
+});
+
 app.listen(port, () => {
   console.log(`Service is runing on http://localhost:${port}`);
 });
