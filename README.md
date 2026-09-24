@@ -12,6 +12,7 @@
 - Service layer
 - TypeScript 型別
 - 基本資料驗證
+- 統一錯誤處理
 
 目前資料先存在記憶體陣列中，尚未接資料庫。
 
@@ -33,8 +34,12 @@ src
 │   └── todoController.ts
 ├── services
 │   └── todoService.ts
-└── types
-    └── todo.ts
+├── types
+│   └── todo.ts
+├── errors
+│   └── AppError.ts
+└── middlewares
+    └── errorHandler.ts
 ```
 
 ## Architecture
@@ -47,13 +52,27 @@ routes         定義 API 路由
 controllers    處理 request / response
 services       處理資料邏輯
 types          定義資料模型型別
+errors         定義自訂錯誤
+middlewares    處理共用 middleware
 ```
 
 ### Responsibility
 
+#### index.ts
+
+負責建立 Express app、掛載 middleware、掛載 routes，並啟動 server。
+
+```ts
+app.use(express.json());
+app.use("/todos", todosRouter);
+app.use(errorHandler);
+```
+
+`errorHandler` 必須放在 routes 後面，才能接住前面丟出的錯誤。
+
 #### routes
 
-負責定義 URL 與 handler 的對應關係。
+負責定義 URL 與 controller handler 的對應關係。
 
 例如：
 
@@ -65,6 +84,8 @@ todosRouter.patch("/:id", updateTodoHandler);
 todosRouter.delete("/:id", deleteTodoHandler);
 ```
 
+routes 不處理商業邏輯，也不直接操作資料。
+
 #### controllers
 
 負責處理 HTTP 相關邏輯，例如：
@@ -72,8 +93,11 @@ todosRouter.delete("/:id", deleteTodoHandler);
 - 讀取 `req.params`
 - 讀取 `req.body`
 - 驗證 request 資料
+- 呼叫 service
 - 回傳 response
-- 回傳正確的 HTTP status code
+- 丟出 HTTP 錯誤
+
+controller 不直接處理資料儲存邏輯。
 
 #### services
 
@@ -105,6 +129,78 @@ export type Todo = {
 只有和資料本身有關的型別才放這裡。
 
 像 `TodoParams` 這種 Express route 專用型別，會放在 controller 附近。
+
+#### errors
+
+負責定義自訂錯誤。
+
+例如：
+
+```ts
+export class AppError extends Error {
+  statusCode: number;
+
+  constructor(statusCode: number, message: string) {
+    super(message);
+
+    this.statusCode = statusCode;
+  }
+}
+```
+
+`AppError` 用來表示可以預期的 HTTP 錯誤，例如：
+
+- 400 Bad Request
+- 404 Not Found
+
+#### middlewares
+
+負責放共用 middleware。
+
+目前有：
+
+```txt
+errorHandler.ts
+```
+
+`errorHandler` 負責統一處理錯誤 response。
+
+## Error Handling
+
+目前使用 centralized error handling。
+
+controller 裡不重複寫：
+
+```ts
+res.status(400).json({
+  message: "error message",
+});
+return;
+```
+
+而是改成：
+
+```ts
+throw new AppError(400, "title must be a non-empty string");
+```
+
+最後由 `errorHandler` 統一回傳：
+
+```json
+{
+  "message": "title must be a non-empty string"
+}
+```
+
+如果是未知錯誤，會回傳：
+
+```json
+{
+  "message": "internal server error"
+}
+```
+
+這樣可以讓 controller 更乾淨，也方便之後統一記錄錯誤或調整錯誤格式。
 
 ## API Endpoints
 
@@ -319,14 +415,14 @@ pnpm start
 - 拆分 controllers
 - 拆分 services
 - 加上基本資料驗證
+- 加上 centralized error handling
 - 理解 route handler 拆出去後，需要補上 params 型別
+- 理解 `AppError` 與 error middleware 的用途
 
 ## Next Steps
 
 接下來可以繼續練習：
 
-- 統一錯誤處理
-- 使用 middleware
 - 加入 PostgreSQL
 - 使用 Prisma
 - 加入環境變數 `.env`
