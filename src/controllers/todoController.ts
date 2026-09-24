@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { AppError } from "../errors/AppError.js";
 import {
   getTodos,
   getTodoById,
@@ -39,10 +40,7 @@ export const createTodosHandler: RequestHandler<TodoParams> = (req, res) => {
   const { title } = req.body;
 
   if (!isValidTitle(title)) {
-    res.status(400).json({
-      message: "title must be a non-empty string",
-    });
-    return;
+    throw new AppError(400, "title must be a non-empty string");
   }
 
   const todo = createTodo(title.trim());
@@ -56,19 +54,13 @@ export const getTodoByIdHandler: RequestHandler<TodoParams> = (req, res) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
-    res.status(400).json({
-      message: "Id must be a postive integer",
-    });
-    return;
+    throw new AppError(400, "id must be a postive integer");
   }
 
   const todo = getTodoById(id);
 
   if (!todo) {
-    res.status(404).json({
-      message: "todo not find",
-    });
-    return;
+    throw new AppError(404, "todo not find");
   }
 
   res.json({
@@ -80,33 +72,21 @@ export const updateTodoHandler: RequestHandler<TodoParams> = (req, res) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
-    res.status(404).json({
-      message: "Id must be a postive integer",
-    });
-    return;
+    throw new AppError(404, "id must be a postive integer");
   }
 
   const { title, completed } = req.body;
 
   if (title === undefined && completed === undefined) {
-    res.status(404).json({
-      message: "title or completed is required",
-    });
-    return;
+    throw new AppError(404, "title or completed is required");
   }
 
   if (title !== undefined && isValidTitle(title)) {
-    res.status(404).json({
-      message: "title must be a non-empty string",
-    });
-    return;
+    throw new AppError(404, "title must be a non-empty string");
   }
 
   if (completed !== undefined && !isValidCompleted(completed)) {
-    res.status(404).json({
-      message: "completed must be a boolean",
-    });
-    return;
+    throw new AppError(404, "completed must be a boolean");
   }
 
   const todo = updateTodo(id, {
@@ -115,10 +95,7 @@ export const updateTodoHandler: RequestHandler<TodoParams> = (req, res) => {
   });
 
   if (!todo) {
-    res.status(404).json({
-      message: "todo not found",
-    });
-    return;
+    throw new AppError(404, "todo not found");
   }
 
   res.json({
@@ -130,19 +107,13 @@ export const deleteTodoHandler: RequestHandler<TodoParams> = (req, res) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
-    res.status(404).json({
-      message: "Id must be a postive integer",
-    });
-    return;
+    throw new AppError(404, "id must be a postive integer");
   }
 
   const deleted = deleteTodo(id);
 
   if (!deleted) {
-    res.status(404).json({
-      message: "todo not found",
-    });
-    return;
+    throw new AppError(404, "todo not found");
   }
 
   res.status(204).send();
