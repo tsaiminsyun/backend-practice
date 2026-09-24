@@ -1,15 +1,13 @@
 import { Router, type Router as ExpressRouter } from "express";
+import {
+  getTodos,
+  getTodoById,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+} from "../services/todoService.js";
 
 export const todosRouter: ExpressRouter = Router();
-
-type Todo = {
-  id: number;
-  title: string;
-  completed: boolean;
-};
-
-const todos: Todo[] = [];
-let nextId = 1;
 
 function parseTodoId(value: string): number | null {
   const id = Number(value);
@@ -31,7 +29,7 @@ function isValidCompleted(value: unknown): value is boolean {
 
 todosRouter.get("/", (req, res) => {
   res.json({
-    todos,
+    data: getTodos(),
   });
 });
 
@@ -45,14 +43,7 @@ todosRouter.post("/", (req, res) => {
     return;
   }
 
-  const todo: Todo = {
-    id: nextId,
-    title: title.trim(),
-    completed: false,
-  };
-
-  todos.push(todo);
-  nextId += 1;
+  const todo = createTodo(title.trim());
 
   res.status(201).json({
     data: todo,
@@ -61,7 +52,6 @@ todosRouter.post("/", (req, res) => {
 
 todosRouter.get("/:id", (req, res) => {
   const id = parseTodoId(req.params.id);
-  const todo = todos.find((todo) => todo.id === id);
 
   if (id === null) {
     res.status(404).json({
@@ -69,6 +59,8 @@ todosRouter.get("/:id", (req, res) => {
     });
     return;
   }
+
+  const todo = getTodoById(id);
 
   res.json({
     data: todo,
@@ -108,21 +100,16 @@ todosRouter.patch("/:id", (req, res) => {
     return;
   }
 
-  const todo = todos.find((todo) => todo.id === id);
+  const todo = updateTodo(id, {
+    title: title === undefined ? undefined : title.trim(),
+    completed,
+  });
 
   if (!todo) {
     res.status(404).json({
       message: "todo not found",
     });
     return;
-  }
-
-  if (title !== undefined) {
-    todo.title = title.trim();
-  }
-
-  if (completed !== undefined) {
-    todo.completed = completed;
   }
 
   res.json({
@@ -140,15 +127,14 @@ todosRouter.delete("/:id", (req, res) => {
     return;
   }
 
-  const todoIndex = todos.findIndex((todo) => todo.id === id);
+  const deleted = deleteTodo(id);
 
-  if (todoIndex === -1) {
+  if (!deleted) {
     res.status(404).json({
       message: "todo not found",
     });
     return;
   }
 
-  todos.splice(todoIndex, 1);
   res.status(204).send();
 });
