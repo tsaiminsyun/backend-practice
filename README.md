@@ -13,21 +13,32 @@
 - TypeScript 型別
 - 基本資料驗證
 - 統一錯誤處理
+- Prisma ORM
+- SQLite database
+- 環境變數管理
 
-目前資料先存在記憶體陣列中，尚未接資料庫。
+目前 Todo 資料已經從記憶體陣列改成 SQLite 資料庫儲存。
 
 ## Tech Stack
 
 - Node.js
 - TypeScript
 - Express
+- Prisma
+- SQLite
 - pnpm
+- dotenv
 
 ## Project Structure
 
 ```txt
 src
 ├── index.ts
+├── config
+│   └── env.ts
+├── lib
+│   ├── prisma.ts
+│   └── prismaError.ts
 ├── routes
 │   └── todos.ts
 ├── controllers
@@ -40,6 +51,9 @@ src
 │   └── AppError.ts
 └── middlewares
     └── errorHandler.ts
+
+prisma
+└── schema.prisma
 ```
 
 ## Architecture
@@ -48,6 +62,8 @@ src
 
 ```txt
 index.ts       啟動 Express app
+config         管理環境變數
+lib            放共用工具，例如 Prisma client
 routes         定義 API 路由
 controllers    處理 request / response
 services       處理資料邏輯
@@ -69,6 +85,42 @@ app.use(errorHandler);
 ```
 
 `errorHandler` 必須放在 routes 後面，才能接住前面丟出的錯誤。
+
+#### config
+
+負責集中管理環境變數。
+
+目前有：
+
+```txt
+src/config/env.ts
+```
+
+所有 `process.env` 都集中在這裡處理，其他檔案不直接讀取 `process.env`。
+
+例如：
+
+```ts
+export const env = {
+  port: getPort(process.env.PORT),
+  databaseUrl: getRequiredEnv("DATABASE_URL"),
+};
+```
+
+#### lib
+
+負責放共用工具。
+
+目前有：
+
+```txt
+src/lib/prisma.ts
+src/lib/prismaError.ts
+```
+
+`prisma.ts` 負責建立 Prisma Client。
+
+`prismaError.ts` 負責判斷 Prisma 錯誤，例如 `P2025`。
 
 #### routes
 
@@ -109,7 +161,7 @@ controller 不直接處理資料儲存邏輯。
 - 修改 todo
 - 刪除 todo
 
-目前資料存在記憶體陣列中。未來可以把這一層改成連接資料庫。
+目前這一層透過 Prisma 操作 SQLite 資料庫。
 
 #### types
 
@@ -165,6 +217,76 @@ errorHandler.ts
 
 `errorHandler` 負責統一處理錯誤 response。
 
+## Database
+
+目前使用 SQLite。
+
+SQLite 是本機檔案型資料庫。  
+資料會存在本機的 `.db` 檔案中，不需要另外啟動資料庫服務。
+
+目前 Prisma schema 定義在：
+
+```txt
+prisma/schema.prisma
+```
+
+Todo model：
+
+```prisma
+model Todo {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+### Prisma Commands
+
+建立 migration：
+
+```bash
+pnpm prisma migrate dev --name init
+```
+
+重新產生 Prisma Client：
+
+```bash
+pnpm prisma generate
+```
+
+開啟 Prisma Studio：
+
+```bash
+pnpm prisma studio
+```
+
+Prisma Studio 可以用瀏覽器查看資料表內容。
+
+## Environment Variables
+
+本專案使用 `.env` 管理環境變數。
+
+`.env` 不應該被 commit。
+
+### `.env`
+
+```env
+PORT=3000
+DATABASE_URL="file:./dev.db"
+```
+
+### `.env.example`
+
+```env
+PORT=3000
+DATABASE_URL="file:./dev.db"
+```
+
+`.env.example` 可以被 commit。  
+它用來告訴其他開發者這個專案需要哪些環境變數。
+
 ## Error Handling
 
 目前使用 centralized error handling。
@@ -201,6 +323,45 @@ throw new AppError(400, "title must be a non-empty string");
 ```
 
 這樣可以讓 controller 更乾淨，也方便之後統一記錄錯誤或調整錯誤格式。
+
+## Prisma Error Handling
+
+Prisma 錯誤會先在 service 層處理。
+
+例如 Prisma 的 `P2025` 代表：
+
+```txt
+record not found
+```
+
+常見情境：
+
+```txt
+update 找不到資料
+delete 找不到資料
+findUniqueOrThrow 找不到資料
+findFirstOrThrow 找不到資料
+```
+
+service 會把 Prisma 錯誤轉成比較好處理的結果：
+
+```ts
+return null;
+```
+
+或：
+
+```ts
+return false;
+```
+
+再由 controller 決定要回傳：
+
+```json
+{
+  "message": "todo not found"
+}
+```
 
 ## API Endpoints
 
@@ -253,7 +414,9 @@ Response:
   "data": {
     "id": 1,
     "title": "Learn backend",
-    "completed": false
+    "completed": false,
+    "createdAt": "2026-09-30T00:00:00.000Z",
+    "updatedAt": "2026-09-30T00:00:00.000Z"
   }
 }
 ```
@@ -271,7 +434,9 @@ Response:
   "data": {
     "id": 1,
     "title": "Learn backend",
-    "completed": false
+    "completed": false,
+    "createdAt": "2026-09-30T00:00:00.000Z",
+    "updatedAt": "2026-09-30T00:00:00.000Z"
   }
 }
 ```
@@ -305,7 +470,9 @@ Response:
   "data": {
     "id": 1,
     "title": "Learn Express",
-    "completed": true
+    "completed": true,
+    "createdAt": "2026-09-30T00:00:00.000Z",
+    "updatedAt": "2026-09-30T00:00:00.000Z"
   }
 }
 ```
@@ -351,82 +518,4 @@ Response:
 
 ```json
 {
-  "title": ""
-}
-```
-
-Response:
-
-```json
-{
-  "message": "title must be a non-empty string"
-}
-```
-
-### Completed
-
-`completed` 必須是 boolean。
-
-錯誤範例：
-
-```json
-{
-  "completed": "yes"
-}
-```
-
-Response:
-
-```json
-{
-  "message": "completed must be a boolean"
-}
-```
-
-## Scripts
-
-### Development
-
-```bash
-pnpm dev
-```
-
-### Build
-
-```bash
-pnpm build
-```
-
-### Start
-
-```bash
-pnpm start
-```
-
-## What I Learned
-
-目前已完成後端基本架構：
-
-- 建立 Express server
-- 建立 RESTful Todo API
-- 理解 CRUD
-- 使用 TypeScript 定義資料型別
-- 拆分 routes
-- 拆分 controllers
-- 拆分 services
-- 加上基本資料驗證
-- 加上 centralized error handling
-- 理解 route handler 拆出去後，需要補上 params 型別
-- 理解 `AppError` 與 error middleware 的用途
-
-## Next Steps
-
-接下來可以繼續練習：
-
-- 加入 PostgreSQL
-- 使用 Prisma
-- 加入環境變數 `.env`
-- 加入登入功能
-- 加入測試
-- 加入 Docker
-- 部署 API
+  "
