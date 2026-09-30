@@ -30,34 +30,42 @@ function isValidCompleted(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
-export const getTodosHandler: RequestHandler<TodoParams> = (req, res) => {
+export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
+  const todos = await getTodos();
+
   res.json({
-    data: getTodos(),
+    data: todos,
   });
 };
 
-export const createTodosHandler: RequestHandler<TodoParams> = (req, res) => {
+export const createTodosHandler: RequestHandler<TodoParams> = async (
+  req,
+  res,
+) => {
   const { title } = req.body;
 
   if (!isValidTitle(title)) {
     throw new AppError(400, "title must be a non-empty string");
   }
 
-  const todo = createTodo(title.trim());
+  const todo = await createTodo(title.trim());
 
   res.status(201).json({
     data: todo,
   });
 };
 
-export const getTodoByIdHandler: RequestHandler<TodoParams> = (req, res) => {
+export const getTodoByIdHandler: RequestHandler<TodoParams> = async (
+  req,
+  res,
+) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
     throw new AppError(400, "id must be a postive integer");
   }
 
-  const todo = getTodoById(id);
+  const todo = await getTodoById(id);
 
   if (!todo) {
     throw new AppError(404, "todo not find");
@@ -68,7 +76,10 @@ export const getTodoByIdHandler: RequestHandler<TodoParams> = (req, res) => {
   });
 };
 
-export const updateTodoHandler: RequestHandler<TodoParams> = (req, res) => {
+export const updateTodoHandler: RequestHandler<TodoParams> = async (
+  req,
+  res,
+) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
@@ -89,7 +100,7 @@ export const updateTodoHandler: RequestHandler<TodoParams> = (req, res) => {
     throw new AppError(404, "completed must be a boolean");
   }
 
-  const todo = updateTodo(id, {
+  const todo = await updateTodo(id, {
     title: title === undefined ? undefined : title.trim(),
     completed,
   });
@@ -103,14 +114,17 @@ export const updateTodoHandler: RequestHandler<TodoParams> = (req, res) => {
   });
 };
 
-export const deleteTodoHandler: RequestHandler<TodoParams> = (req, res) => {
+export const deleteTodoHandler: RequestHandler<TodoParams> = async (
+  req,
+  res,
+) => {
   const id = parseTodoId(req.params.id);
 
   if (id === null) {
     throw new AppError(404, "id must be a postive integer");
   }
 
-  const deleted = deleteTodo(id);
+  const deleted = await deleteTodo(id);
 
   if (!deleted) {
     throw new AppError(404, "todo not found");
