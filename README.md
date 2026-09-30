@@ -518,4 +518,86 @@ Response:
 
 ```json
 {
-  "
+  "title": ""
+}
+```
+
+Response:
+
+```json
+{
+  "message": "title must be a non-empty string"
+}
+```
+
+### Completed
+
+`completed` 必須是 boolean。
+
+錯誤範例：
+
+```json
+{
+  "completed": "yes"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "completed must be a boolean"
+}
+```
+
+## Scripts
+
+### Development
+
+```bash
+pnpm dev
+```
+
+### Build
+
+```bash
+pnpm build
+```
+
+### Start
+
+```bash
+pnpm start
+```
+
+## What I Learned
+
+目前已完成後端基本架構：
+
+- 建立 Express server
+- 建立 RESTful Todo API
+- 理解 CRUD
+- 使用 TypeScript 定義資料型別
+- 拆分 routes
+- 拆分 controllers
+- 拆分 services
+- 加上基本資料驗證
+- 加上 centralized error handling
+- 使用 Prisma 操作資料庫
+- 使用 SQLite 儲存資料
+- 管理環境變數
+- 理解 route handler 拆出去後，需要補上 params 型別
+- 理解 `AppError` 與 error middleware 的用途
+- 理解 Prisma `P2025` record not found 錯誤
+
+## Next Steps
+
+接下來可以繼續練習：
+
+- 加入 request logger middleware
+- 加入 CORS
+- 加入測試
+- 加入登入功能
+- 加入 Docker
+- 換成 PostgreSQL
+- 部署 API
