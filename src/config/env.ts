@@ -23,4 +23,5 @@ function getPort(value: string | undefined): number {
 export const env = {
   port: getPort(process.env.PORT),
   databaseUrl: getRequiredEnv("DATABASE_URL"),
+  corsOrigin: process.env.CORS_ORISIN ?? "http://localhost:5173",
 };
