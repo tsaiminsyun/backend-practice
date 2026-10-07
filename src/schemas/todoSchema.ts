@@ -16,3 +16,10 @@ export const updateTodoSchema = z
   .refine((data) => data.title !== undefined || data.completed !== undefined, {
     message: "title or completed is required",
   });
+
+export const todoParamsSchema = z.object({
+  id: z.coerce
+    .number()
+    .int("id must be a positive integer")
+    .positive("id must be a positive integer"),
+});

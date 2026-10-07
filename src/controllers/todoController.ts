@@ -12,16 +12,6 @@ type TodoParams = {
   id: string;
 };
 
-function parseTodoId(value: string): number | null {
-  const id = Number(value);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return null;
-  }
-
-  return id;
-}
-
 export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
   const todos = await getTodos();
 
@@ -47,11 +37,7 @@ export const getTodoByIdHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = parseTodoId(req.params.id);
-
-  if (id === null) {
-    throw new AppError(400, "id must be a postive integer");
-  }
+  const id = Number(req.params.id);
 
   const todo = await getTodoById(id);
 
@@ -68,11 +54,7 @@ export const updateTodoHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = parseTodoId(req.params.id);
-
-  if (id === null) {
-    throw new AppError(404, "id must be a postive integer");
-  }
+  const id = Number(req.params.id);
 
   const todo = await updateTodo(id, req.body);
 
@@ -89,11 +71,7 @@ export const deleteTodoHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = parseTodoId(req.params.id);
-
-  if (id === null) {
-    throw new AppError(404, "id must be a postive integer");
-  }
+  const id = Number(req.params.id);
 
   const deleted = await deleteTodo(id);
 
