@@ -1,4 +1,4 @@
-import { optional, z } from "zod";
+import { z } from "zod";
 
 export const createTodoSchema = z.object({
   title: z.string().trim().min(1, "title must be a non-empty string"),

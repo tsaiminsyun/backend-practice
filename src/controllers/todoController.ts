@@ -1,5 +1,3 @@
-import { ZodError } from "zod";
-import { createTodoSchema, updateTodoSchema } from "../schemas/todoSchema.js";
 import type { RequestHandler } from "express";
 import { AppError } from "../errors/AppError.js";
 import {
@@ -13,10 +11,6 @@ import {
 type TodoParams = {
   id: string;
 };
-
-function getZodErrorMessage(error: ZodError): string {
-  return error.issues[0]?.message ?? "invalid request body";
-}
 
 function parseTodoId(value: string): number | null {
   const id = Number(value);
@@ -40,13 +34,9 @@ export const createTodosHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const result = createTodoSchema.safeParse(req.body);
+  const { title } = req.body;
 
-  if (!result.success) {
-    throw new AppError(400, getZodErrorMessage(result.error));
-  }
-
-  const todo = await createTodo(result.data.title);
+  const todo = await createTodo(title);
 
   res.status(201).json({
     data: todo,
@@ -84,13 +74,7 @@ export const updateTodoHandler: RequestHandler<TodoParams> = async (
     throw new AppError(404, "id must be a postive integer");
   }
 
-  const result = updateTodoSchema.safeParse(req.body);
-
-  if (!result.success) {
-    throw new AppError(404, getZodErrorMessage(result.error));
-  }
-
-  const todo = await updateTodo(id, result.data);
+  const todo = await updateTodo(id, req.body);
 
   if (!todo) {
     throw new AppError(404, "todo not found");
