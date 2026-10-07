@@ -1,4 +1,10 @@
 import type { RequestHandler } from "express";
+import type {
+  CreateTodoBody,
+  TodoParams,
+  UpdateTodoBody,
+} from "../schemas/todoSchema.js";
+import type { ValidatedRequest } from "../types/exporess.js";
 import { AppError } from "../errors/AppError.js";
 import {
   getTodos,
@@ -8,10 +14,6 @@ import {
   deleteTodo,
 } from "../services/todoService.js";
 
-type TodoParams = {
-  id: string;
-};
-
 export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
   const todos = await getTodos();
 
@@ -20,13 +22,14 @@ export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
   });
 };
 
-export const createTodosHandler: RequestHandler<TodoParams> = async (
-  req,
-  res,
-) => {
-  const { title } = req.body;
+export const createTodosHandler: RequestHandler = async (req, res) => {
+  const { body } = res.locals.validated as ValidatedRequest<CreateTodoBody>;
 
-  const todo = await createTodo(title);
+  if (!body) {
+    throw new AppError(400, "invalid request body");
+  }
+
+  const todo = await createTodo(body.title);
 
   res.status(201).json({
     data: todo,
@@ -37,12 +40,19 @@ export const getTodoByIdHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = Number(req.params.id);
+  const { params } = res.locals.validated as ValidatedRequest<
+    unknown,
+    TodoParams
+  >;
 
-  const todo = await getTodoById(id);
+  if (!params) {
+    throw new AppError(400, "invalid route params");
+  }
+
+  const todo = await getTodoById(params.id);
 
   if (!todo) {
-    throw new AppError(404, "todo not find");
+    throw new AppError(404, "todo not found");
   }
 
   res.json({
@@ -54,9 +64,20 @@ export const updateTodoHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = Number(req.params.id);
+  const { body, params } = res.locals.validated as ValidatedRequest<
+    UpdateTodoBody,
+    TodoParams
+  >;
 
-  const todo = await updateTodo(id, req.body);
+  if (!params) {
+    throw new AppError(400, "invalid route params");
+  }
+
+  if (!body) {
+    throw new AppError(400, "invalid request body");
+  }
+
+  const todo = await updateTodo(params.id, body);
 
   if (!todo) {
     throw new AppError(404, "todo not found");
@@ -71,9 +92,16 @@ export const deleteTodoHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const id = Number(req.params.id);
+  const { params } = res.locals.validated as ValidatedRequest<
+    unknown,
+    TodoParams
+  >;
 
-  const deleted = await deleteTodo(id);
+  if (!params) {
+    throw new AppError(400, "invalid route params");
+  }
+
+  const deleted = await deleteTodo(params.id);
 
   if (!deleted) {
     throw new AppError(404, "todo not found");

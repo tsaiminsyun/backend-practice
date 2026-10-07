@@ -15,6 +15,11 @@ export function validateParams(schema: ZodType): RequestHandler {
       return;
     }
 
+    res.locals.validated = {
+      ...res.locals.validated,
+      params: result.data,
+    };
+
     next();
   };
 }

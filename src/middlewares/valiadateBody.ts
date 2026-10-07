@@ -1,7 +1,7 @@
-import { ZodError } from "zod";
-import type { ZodType } from "zod";
-import { AppError } from "../errors/AppError.js";
 import type { RequestHandler } from "express";
+import type { ZodType } from "zod";
+import { ZodError } from "zod";
+import { AppError } from "../errors/AppError.js";
 
 function getZodErrorMessage(error: ZodError): string {
   return error.issues[0]?.message ?? "invalid request body";
@@ -16,7 +16,7 @@ export function validateBody(schema: ZodType): RequestHandler {
       return;
     }
 
-    req.body = result.data;
+    res.locals.validated = { ...res.locals.validated, body: result.data };
     next();
   };
 }

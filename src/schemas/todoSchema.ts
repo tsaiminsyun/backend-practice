@@ -23,3 +23,7 @@ export const todoParamsSchema = z.object({
     .int("id must be a positive integer")
     .positive("id must be a positive integer"),
 });
+
+export type CreateTodoBody = z.infer<typeof createTodoSchema>;
+export type UpdateTodoBody = z.infer<typeof updateTodoSchema>;
+export type TodoParams = z.infer<typeof todoParamsSchema>;
