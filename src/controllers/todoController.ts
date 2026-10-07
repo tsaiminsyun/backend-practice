@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+import { createTodoSchema, updateTodoSchema } from "../schemas/todoSchema.js";
 import type { RequestHandler } from "express";
 import { AppError } from "../errors/AppError.js";
 import {
@@ -12,6 +14,10 @@ type TodoParams = {
   id: string;
 };
 
+function getZodErrorMessage(error: ZodError): string {
+  return error.issues[0]?.message ?? "invalid request body";
+}
+
 function parseTodoId(value: string): number | null {
   const id = Number(value);
 
@@ -20,14 +26,6 @@ function parseTodoId(value: string): number | null {
   }
 
   return id;
-}
-
-function isValidTitle(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function isValidCompleted(value: unknown): value is boolean {
-  return typeof value === "boolean";
 }
 
 export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
@@ -42,13 +40,13 @@ export const createTodosHandler: RequestHandler<TodoParams> = async (
   req,
   res,
 ) => {
-  const { title } = req.body;
+  const result = createTodoSchema.safeParse(req.body);
 
-  if (!isValidTitle(title)) {
-    throw new AppError(400, "title must be a non-empty string");
+  if (!result.success) {
+    throw new AppError(400, getZodErrorMessage(result.error));
   }
 
-  const todo = await createTodo(title.trim());
+  const todo = await createTodo(result.data.title);
 
   res.status(201).json({
     data: todo,
@@ -86,24 +84,13 @@ export const updateTodoHandler: RequestHandler<TodoParams> = async (
     throw new AppError(404, "id must be a postive integer");
   }
 
-  const { title, completed } = req.body;
+  const result = updateTodoSchema.safeParse(req.body);
 
-  if (title === undefined && completed === undefined) {
-    throw new AppError(404, "title or completed is required");
+  if (!result.success) {
+    throw new AppError(404, getZodErrorMessage(result.error));
   }
 
-  if (title !== undefined && isValidTitle(title)) {
-    throw new AppError(404, "title must be a non-empty string");
-  }
-
-  if (completed !== undefined && !isValidCompleted(completed)) {
-    throw new AppError(404, "completed must be a boolean");
-  }
-
-  const todo = await updateTodo(id, {
-    title: title === undefined ? undefined : title.trim(),
-    completed,
-  });
+  const todo = await updateTodo(id, result.data);
 
   if (!todo) {
     throw new AppError(404, "todo not found");
