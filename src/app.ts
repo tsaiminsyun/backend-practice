@@ -5,6 +5,8 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
 import { requestLogger } from "./middlewares/requestLogger.js";
 import { todosRouter } from "./routes/todos.js";
+import { authRouter } from './routes/auth.js';
+
 
 export const app = express();
 
@@ -19,6 +21,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/todos", todosRouter);
+app.use("/auth", authRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
