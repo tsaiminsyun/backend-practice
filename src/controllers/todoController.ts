@@ -15,7 +15,8 @@ import {
 } from "../services/todoService.js";
 
 export const getTodosHandler: RequestHandler<TodoParams> = async (req, res) => {
-  const todos = await getTodos();
+  const userId = res.locals.userId as number;
+  const todos = await getTodos(userId);
 
   res.json({
     data: todos,
@@ -29,7 +30,8 @@ export const createTodosHandler: RequestHandler = async (req, res) => {
     throw new AppError(400, "invalid request body");
   }
 
-  const todo = await createTodo(body.title);
+  const userId = res.locals.userId as number;
+  const todo = await createTodo(body.title, userId);
 
   res.status(201).json({
     data: todo,
@@ -49,7 +51,8 @@ export const getTodoByIdHandler: RequestHandler<TodoParams> = async (
     throw new AppError(400, "invalid route params");
   }
 
-  const todo = await getTodoById(params.id);
+  const userId = res.locals.userId as number;
+  const todo = await getTodoById(params.id, userId);
 
   if (!todo) {
     throw new AppError(404, "todo not found");
@@ -77,7 +80,8 @@ export const updateTodoHandler: RequestHandler<TodoParams> = async (
     throw new AppError(400, "invalid request body");
   }
 
-  const todo = await updateTodo(params.id, body);
+  const userId = res.locals.userId as number;
+  const todo = await updateTodo(params.id, userId, body);
 
   if (!todo) {
     throw new AppError(404, "todo not found");
@@ -101,7 +105,8 @@ export const deleteTodoHandler: RequestHandler<TodoParams> = async (
     throw new AppError(400, "invalid route params");
   }
 
-  const deleted = await deleteTodo(params.id);
+  const userId = res.locals.userId as number;
+  const deleted = await deleteTodo(params.id, userId);
 
   if (!deleted) {
     throw new AppError(404, "todo not found");
