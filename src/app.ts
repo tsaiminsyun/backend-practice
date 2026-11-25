@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
@@ -13,6 +14,8 @@ export const app = express();
 app.use(requestLogger);
 
 app.use(cors({ origin: env.corsOrigin }));
+
+app.use(helmet());
 
 app.use(express.json());
 
