@@ -122,3 +122,13 @@ COMMIT;
 SELECT * FROM practice_products;
 
 SELECT * FROM practice_orders;
+
+-- 16. 查看 Express 註冊的使用者
+
+SELECT id, email FROM "User";
+
+SELECT current_database(), current_schema();
+
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public';
